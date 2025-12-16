@@ -1,0 +1,15 @@
+# Prerequisites
+*.d
+*.o
+*.obj
+*.exe
+
+# Build folders
+build/
+bin/
+out/
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
