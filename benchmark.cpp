@@ -9,6 +9,7 @@ int main()
     const int NUM_ORDERS = 100000;
 
     std::vector<Order> orders;
+
     orders.reserve(NUM_ORDERS);
     std::mt19937 gen(42);                               // fixed seed for reproducibility
     std::uniform_int_distribution<> priceDist(90, 110); // price range between 90 and 110
