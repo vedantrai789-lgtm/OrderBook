@@ -11,15 +11,25 @@ int main()
     std::vector<Order> orders;
 
     orders.reserve(NUM_ORDERS);
-    std::mt19937 gen(42);                                  // fixed seed for reproducibility
-    std::uniform_int_distribution<> priceDist(1000, 5000); // price range between 90 and 110
+    std::mt19937 gen(42); // fixed seed for reproducibility
+    // std::uniform_int_distribution<> priceDist(1000, 5000); // price range between 90 and 110
     std::uniform_int_distribution<> qtyDist(1, 100);
     std::uniform_int_distribution<> sideDist(0, 1);
+
+    std::normal_distribution<> priceDist(1000, 20);
 
     for (int i = 0; i < NUM_ORDERS; ++i)
     {
         Side side = (sideDist(gen) == 0) ? Side::BUY : Side::SELL;
-        orders.push_back({i, priceDist(gen), qtyDist(gen), side});
+        int price = std::round(priceDist(gen));
+
+        // Safety bounds
+        if (price < 0)
+            price = 0;
+        if (price > 100000)
+            price = 100000;
+
+        orders.push_back({i, price, qtyDist(gen), side});
     }
 
     std::cout << "processing" << NUM_ORDERS << " orders \n";
