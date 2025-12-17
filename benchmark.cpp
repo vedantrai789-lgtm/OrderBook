@@ -12,15 +12,16 @@ int main()
 
     orders.reserve(NUM_ORDERS);
     std::mt19937 gen(42); // fixed seed for reproducibility
-    // std::uniform_int_distribution<> priceDist(90, 110); // price range between 90 and 110
+    // std::uniform_int_distribution<> priceDist(1000, 5000); // price range between 90 and 110
     std::uniform_int_distribution<> qtyDist(1, 100);
     std::uniform_int_distribution<> sideDist(0, 1);
 
     std::normal_distribution<> priceDist(1000, 20);
+
     for (int i = 0; i < NUM_ORDERS; ++i)
     {
         Side side = (sideDist(gen) == 0) ? Side::BUY : Side::SELL;
-        double price = std::round(priceDist(gen));
+        int price = std::round(priceDist(gen));
 
         // Safety bounds
         if (price < 0)

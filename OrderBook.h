@@ -12,20 +12,26 @@ enum class Side
 struct Order
 {
     int id;
-    double price;
+    int price;
     int quantity;
     Side side;
 };
 
+const int MAX_PRICE = 100000;
+
 class OrderBook
 {
 private:
-    std::map<double, std::list<Order>, std::greater<double>> bids; // buy side
-    std::map<double, std::list<Order>> asks;                       // sell side
-    bool matchOrder(Order &order);
+    std::vector<std::list<Order>> bids;
+    std::vector<std::list<Order>> asks;
+
+    int maxBidPrice;
+    int minAskPrice;
 
 public:
-    void addOrder(int id, double price, int quantity, Side side);
+    OrderBook(); // constructor
+    void addOrder(int id, int price, int quantity, Side side);
+    bool matchOrder(Order &order);
     void cancelOrder(int id);
     void printOrder();
 };
