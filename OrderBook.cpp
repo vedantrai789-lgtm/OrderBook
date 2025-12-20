@@ -34,26 +34,47 @@ void OrderBook::addOrder(int id, int price, int quantity, Side side)
 
 void OrderBook::printOrder()
 {
-    // Only print relevant range for visual clarity
-    // (Printing 100,000 lines would be bad)
     std::cout << "--- ASKS ---\n";
-    for (int p = minAskPrice + 5; p >= minAskPrice; p--)
+    int asksSeen = 0;
+    // Scan up to 1000 ticks above the best ask to find depth
+    for (int p = minAskPrice; p <= minAskPrice + 1000; p++)
     {
         if (p >= MAX_PRICE)
-            continue;
+            break;
+        if (asksSeen >= 5)
+            break; // Stop after printing top 5 levels
+
         if (!asks[p].empty())
         {
-            std::cout << "Price: " << p << " Qty: " << asks[p].size() << "\n";
+            int totalQty = 0;
+            for (const auto &o : asks[p])
+            {
+                totalQty += o.quantity;
+            }
+            std::cout << "Price: " << p << " | Total Qty: " << totalQty << " (" << asks[p].size() << " orders)\n";
+            asksSeen++;
         }
     }
+
     std::cout << "--- BIDS ---\n";
-    for (int p = maxBidPrice; p >= maxBidPrice - 5; p--)
+    int bidsSeen = 0;
+    // Scan down to 1000 ticks below the best bid
+    for (int p = maxBidPrice; p >= maxBidPrice - 1000; p--)
     {
         if (p < 0)
-            continue;
+            break;
+        if (bidsSeen >= 5)
+            break; // Stop after printing top 5 levels
+
         if (!bids[p].empty())
         {
-            std::cout << "Price: " << p << " Qty: " << bids[p].size() << "\n";
+            int totalQty = 0;
+            for (const auto &o : bids[p])
+            {
+                totalQty += o.quantity;
+            }
+            std::cout << "Price: " << p << " | Total Qty: " << totalQty << " (" << bids[p].size() << " orders)\n";
+            bidsSeen++;
         }
     }
 }

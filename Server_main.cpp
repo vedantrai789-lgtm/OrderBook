@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sstream>
+#include "OrderBook.h"
 
 void check(int status, std::string msg)
 {
@@ -15,10 +17,14 @@ void check(int status, std::string msg)
 }
 int main()
 {
+    // Initialize trading engine
+    OrderBook book;
+    std::cout << "Trading engine initialized.\n";
+
     int port = 54321;
 
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    check(serverSocket, "Failed niga cuz u gay fam");
+    check(serverSocket, "Failed to create socket");
 
     int opt = 1;
     setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -31,14 +37,14 @@ int main()
     check(bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)), "Bind Failed");
 
     check(listen(serverSocket, 10), "listen failed");
-    std::cout << "Server lsitening on port: " << port << "...\n";
+    std::cout << "Waiting for traders on port: " << port << "...\n";
 
     sockaddr_in clientAddr;
     socklen_t clientSize = sizeof(clientAddr);
     int clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientSize);
     check(clientSocket, "Accept Failed ");
 
-    std::cout << "Client connected mf!!\n";
+    std::cout << "Trader connected!\n";
 
     char buffer[1024];
     while (true)
@@ -52,9 +58,33 @@ int main()
             std::cout << "Client disconnected.\n";
             break;
         }
-        std::cout << "Received: " << buffer << "\n";
-        std::string response = "server received: " + std::string(buffer);
+
+        std::string input(buffer);
+        std::stringstream ss(input);
+
+        std::string action;
+        int id, price, quantity;
+        ss >> action >> id >> price >> quantity;
+
+        Side side;
+        if (action == "BUY")
+            side = Side::BUY;
+        else if (action == "SELL")
+            side = Side::SELL;
+        else
+        {
+            std::string msg = "Invalid Order.\n";
+            write(clientSocket, msg.c_str(), msg.size());
+            continue;
+        }
+        std::cout << "Processing: " << action << " " << price << " " << quantity << "\n";
+        book.addOrder(id, price, quantity, side);
+
+        std::string response = "ORDER_ACK " + std::to_string(id) + "\n";
         write(clientSocket, response.c_str(), response.size());
+
+        book.printOrder();
+        std::cout << "\n\n";
     }
     close(clientSocket);
     close(serverSocket);
