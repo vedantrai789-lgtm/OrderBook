@@ -6,3 +6,5 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(engine main.cpp OrderBook.cpp)
 
 add_executable(benchmark benchmark.cpp OrderBook.cpp)
+
+add_executable(server Server_main.cpp)
