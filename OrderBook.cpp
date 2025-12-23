@@ -36,8 +36,8 @@ void OrderBook::printOrder()
 {
     std::cout << "--- ASKS ---\n";
     int asksSeen = 0;
-    // Scan up to 1000 ticks above the best ask to find depth
-    for (int p = minAskPrice; p <= minAskPrice + 1000; p++)
+    // Scan from 1000 ticks above the best ask to the best ask to find depth
+    for (int p = minAskPrice + 1000; p >= minAskPrice; p--)
     {
         if (p >= MAX_PRICE)
             break;
