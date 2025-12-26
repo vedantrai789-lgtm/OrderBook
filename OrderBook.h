@@ -34,4 +34,32 @@ public:
     bool matchOrder(Order &order);
     void cancelOrder(int id);
     void printOrder();
+
+    bool isAskEmpty(int price)
+    {
+        if (price >= MAX_PRICE || price < 0)
+            return true;
+        return asks[price].empty();
+    }
+
+    bool isBidEmpty(int price)
+    {
+        if (price >= MAX_PRICE || price < 0)
+            return true;
+        return bids[price].empty();
+    }
+
+    int getAskCount(int price)
+    {
+        if (price >= MAX_PRICE || price < 0)
+            return 0;
+        return asks[price].size();
+    }
+
+    int getBidCount(int price)
+    {
+        if (price >= MAX_PRICE || price < 0)
+            return 0;
+        return bids[price].size();
+    }
 };
