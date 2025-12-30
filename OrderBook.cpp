@@ -1,12 +1,6 @@
 #include "OrderBook.h"
 #include <algorithm>
-
-OrderBook::OrderBook() : maxBidPrice(0), minAskPrice(MAX_PRICE)
-{
-    // resize vectors
-    bids.resize(MAX_PRICE + 1);
-    asks.resize(MAX_PRICE + 1);
-}
+#include <iostream>
 
 void OrderBook::addOrder(int id, int price, int quantity, Side side)
 {
@@ -17,15 +11,35 @@ void OrderBook::addOrder(int id, int price, int quantity, Side side)
 
     if (newOrder.quantity > 0)
     {
+        // allocate new memory
+        int idx = orderpool.allocate();
+        OrderNode &node = orderpool.get(idx);
+        node.order = newOrder;
+
+        level *lvl = (side == Side::BUY) ? &bids[price] : &asks[price];
+
+        if (lvl->head == -1)
+        {
+            // first order in this price
+            lvl->head = idx;
+            lvl->tail = idx;
+        }
+        else
+        {
+            // append to tail
+            OrderNode &Tailnode = orderpool.get(lvl->tail);
+            Tailnode.next = idx;
+            node.prev = lvl->tail;
+            lvl->tail = idx;
+        }
+
         if (side == Side::BUY)
         {
-            bids[price].push_back(newOrder);
             if (price > maxBidPrice)
                 maxBidPrice = price;
         }
         else
         {
-            asks[price].push_back(newOrder);
             if (price < minAskPrice)
                 minAskPrice = price;
         }
@@ -34,6 +48,7 @@ void OrderBook::addOrder(int id, int price, int quantity, Side side)
 
 void OrderBook::printOrder()
 {
+    /*
     std::cout << "--- ASKS ---\n";
     int asksSeen = 0;
     // Scan from 1000 ticks above the best ask to the best ask to find depth
@@ -77,84 +92,126 @@ void OrderBook::printOrder()
             bidsSeen++;
         }
     }
+    */
 }
 
 bool OrderBook::matchOrder(Order &incomingOrder)
 {
     if (incomingOrder.side == Side::BUY)
     {
-        // auto it = asks.begin();
-
         while (minAskPrice < MAX_PRICE && incomingOrder.quantity > 0)
         {
-            // double bestAskPrice = it->first;
-            std::list<Order> &ordersAtPrice = asks[minAskPrice];
-
             if (incomingOrder.price < minAskPrice)
             {
                 return false;
             }
+            level &lvl = asks[minAskPrice];
 
-            auto orderIt = ordersAtPrice.begin();
-            while (orderIt != ordersAtPrice.end() && incomingOrder.quantity > 0)
+            int curr = lvl.head;
+            while (curr != -1 && incomingOrder.quantity > 0)
             {
-                Order &bookOrder = *orderIt;
+                OrderNode &node = orderpool.get(curr);
+                Order &bookOrder = node.order;
 
                 int tradeQty = std::min(incomingOrder.quantity, bookOrder.quantity);
-
                 incomingOrder.quantity -= tradeQty;
                 bookOrder.quantity -= tradeQty;
 
+                int nextNodeInt = node.next;
+
                 if (bookOrder.quantity == 0)
                 {
-                    orderIt = ordersAtPrice.erase(orderIt); // returns the next iterator
+                    // unlink node (remove from doubly linked list)
+                    if (node.prev != -1)
+                    {
+                        // if a prev node exists
+                        orderpool.get(node.prev).next = node.next;
+                    }
+                    else
+                    {
+                        lvl.head = node.next; // just change head of list
+                    }
+
+                    if (node.next != -1)
+                    {
+                        orderpool.get(node.next).prev = node.prev;
+                    }
+                    else
+                    {
+                        lvl.tail = node.prev; // change tail of list
+                    }
                 }
-                else
-                {
-                    ++orderIt;
-                }
+                curr = nextNodeInt;
             }
-            if (ordersAtPrice.empty())
+            if (lvl.head == -1)
             {
-                ++minAskPrice; // moving inside vector
+                minAskPrice++;
             }
         }
     }
     else
     {
-        // auto it = bids.begin();
         while (maxBidPrice > 0 && incomingOrder.quantity > 0)
         {
-            // double bestBuyPrice = it->first;
-            std::list<Order> &orderAtPrice = bids[maxBidPrice];
 
             if (incomingOrder.price > maxBidPrice)
             {
                 return false;
             }
 
-            auto orderIt = orderAtPrice.begin();
-            while (orderIt != orderAtPrice.end() && incomingOrder.quantity > 0)
+            level &lvl = bids[maxBidPrice];
+            int curr = lvl.head;
+            while (curr != -1 && incomingOrder.quantity > 0)
             {
-                Order &bookOrder = *orderIt;
+                OrderNode &node = orderpool.get(curr);
+                Order &bookOrder = node.order;
+
                 int tradeQty = std::min(incomingOrder.quantity, bookOrder.quantity);
+
                 incomingOrder.quantity -= tradeQty;
                 bookOrder.quantity -= tradeQty;
 
+                int nextNodeInt = node.next;
                 if (bookOrder.quantity == 0)
                 {
-                    orderIt = orderAtPrice.erase(orderIt); // returns the next iterator
+                    // unlink node (remove from doubly linked list)
+                    if (node.prev != -1)
+                    {
+                        // if a prev node exists
+                        orderpool.get(node.prev).next = node.next;
+                    }
+                    else
+                    {
+                        lvl.head = node.next; // just change head of list
+                    }
+
+                    if (node.next != -1)
+                    {
+                        orderpool.get(node.next).prev = node.prev;
+                    }
+                    else
+                    {
+                        lvl.tail = node.prev; // change tail of list
+                    }
                 }
-                else
-                {
-                    ++orderIt;
-                }
+                curr = nextNodeInt;
             }
-            if (orderAtPrice.empty())
+            if (lvl.head == -1)
             {
-                --maxBidPrice;
+                maxBidPrice--;
             }
         }
     }
     return incomingOrder.quantity == 0;
+}
+int OrderBook::getAskCount(int price)
+{
+    int count = 0;
+    int curr = asks[minAskPrice].head;
+    while (curr != -1)
+    {
+        count++;
+        curr = orderpool.get(curr).next;
+    }
+    return count;
 }

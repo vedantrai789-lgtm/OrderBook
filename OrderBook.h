@@ -1,65 +1,36 @@
 #pragma once
-#include <iostream>
-#include <map>
-#include <list>
+#include "OrderDefs.h"
+#include "OrderPool.h"
+#include <vector>
 
-enum class Side
+struct level
 {
-    BUY,
-    SELL
+    int head = -1;
+    int tail = -1;
 };
-
-struct Order
-{
-    int id;
-    int price;
-    int quantity;
-    Side side;
-};
-
-const int MAX_PRICE = 100000;
 
 class OrderBook
 {
 private:
-    std::vector<std::list<Order>> bids;
-    std::vector<std::list<Order>> asks;
+    std::vector<level> bids;
+    std::vector<level> asks;
+    OrderPool orderpool; // custom memory
 
     int maxBidPrice;
     int minAskPrice;
 
 public:
-    OrderBook(); // constructor
+    OrderBook() : orderpool(100000), maxBidPrice(0), minAskPrice(MAX_PRICE) // constructor
+    {
+        bids.resize(MAX_PRICE + 1);
+        asks.resize(MAX_PRICE + 1);
+    };
     void addOrder(int id, int price, int quantity, Side side);
     bool matchOrder(Order &order);
-    void cancelOrder(int id);
+    // void cancelOrder(int id);
     void printOrder();
 
-    bool isAskEmpty(int price)
-    {
-        if (price >= MAX_PRICE || price < 0)
-            return true;
-        return asks[price].empty();
-    }
-
-    bool isBidEmpty(int price)
-    {
-        if (price >= MAX_PRICE || price < 0)
-            return true;
-        return bids[price].empty();
-    }
-
-    int getAskCount(int price)
-    {
-        if (price >= MAX_PRICE || price < 0)
-            return 0;
-        return asks[price].size();
-    }
-
-    int getBidCount(int price)
-    {
-        if (price >= MAX_PRICE || price < 0)
-            return 0;
-        return bids[price].size();
-    }
+    bool isAskEmpty(int price) const { return asks[price].head == -1; }
+    bool isBidEmpty(int price) const { return bids[price].head == -1; }
+    int getAskCount(int price); // Need to count manually now
 };
